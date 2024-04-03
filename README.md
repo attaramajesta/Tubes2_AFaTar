@@ -59,6 +59,6 @@ WikiRace is a competitive online game where players navigate through Wikipedia b
 
 ## Author 🪙
 
-Attara Majesta Ayub - 13522139
-Farrel Natha Saskoro - 13522145
-Axel Santadi Warih - 13522155
+- Attara Majesta Ayub - 13522139
+- Farrel Natha Saskoro - 13522145
+- Axel Santadi Warih - 13522155
