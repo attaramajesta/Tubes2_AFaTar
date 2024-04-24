@@ -1,111 +1,138 @@
 package main
 
 import (
+    "container/list"
     "fmt"
     "log"
     "net/http"
+    "golang.org/x/net/html"
     "strings"
-
-    "github.com/PuerkitoBio/goquery"
+	"time"
 )
 
+// Link merepresentasikan tautan antara halaman Wikipedia
+type Link struct {
+    URL   string
+}
+
+// Fungsi getLinks mengambil tautan dari halaman Wikipedia
+func getLinks(pageURL string) []Link {
+	resp, err := http.Get(pageURL)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil
+	}
+
+	var links []Link
+	var traverse func(*html.Node)
+	traverse = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			for _, attr := range n.Attr {
+				if attr.Key == "href" && strings.HasPrefix(attr.Val, "/wiki/") {
+					// Periksa apakah tautan memiliki class "new" atau title yang mengandung kata kunci "Portal"
+					isArticleLink := true
+					for _, class := range strings.Fields(attr.Val) {
+						if class == "new" || strings.Contains(strings.ToLower(class), "portal") {
+							isArticleLink = false
+							break
+						}
+					}
+					// Periksa apakah tautan mengandung pola khas untuk URL halaman Wikipedia
+					if isArticleLink && strings.HasPrefix(attr.Val, "/wiki/") && !strings.Contains(attr.Val, ":") {
+						link := Link{
+							URL:   "https://en.wikipedia.org" + attr.Val,
+						}
+						links = append(links, link)
+					}
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			traverse(c)
+		}
+	}
+	traverse(doc)
+
+	return links
+}
+
+// Algoritma BFS untuk menemukan jalur terpendek antara dua halaman Wikipedia
+func findShortestPath(startURL, endURL string) []Link {
+	// Queue untuk BFS
+	queue := list.New()
+
+	// Menyimpan jalur yang telah dikunjungi
+	visited := make(map[string]bool)
+
+	// Menyimpan jalur yang telah ditemukan
+	path := make(map[string][]Link)
+
+	// Tambahkan halaman awal ke queue
+	queue.PushBack([]Link{{URL: startURL}})
+
+	// Lakukan BFS
+	for queue.Len() > 0 {
+		// Ambil jalur dari queue
+		currentPath := queue.Remove(queue.Front()).([]Link)
+		currentLink := currentPath[len(currentPath)-1]
+
+		// Jika sudah mencapai halaman akhir
+		if currentLink.URL == endURL {
+			return currentPath
+		}
+
+		// Periksa halaman yang terhubung dengan halaman saat ini
+		links := getLinks(currentLink.URL)
+		for _, link := range links {
+			// Jika halaman belum dikunjungi
+			if !visited[link.URL] {
+				// Tandai halaman sebagai dikunjungi
+				visited[link.URL] = true
+
+				// Tambahkan link ke jalur yang sedang diperiksa
+				newPath := append(currentPath, link)
+
+				// Tambahkan jalur ke queue
+				queue.PushBack(newPath)
+
+				// Simpan jalur
+				path[link.URL] = newPath
+				fmt.Print(newPath, "\n")
+
+				// Jika link adalah endURL, langsung kembalikan jalur yang ditemukan
+				if link.URL == endURL {
+					return newPath
+				}
+			}
+		}
+	}
+
+	// Jika tidak ada jalur yang ditemukan
+	return nil
+}
+
 func main() {
-    // Tentukan URL awal dan akhir
-    startURL := "https://en.wikipedia.org/wiki/Toyota"
-    targetURL := "https://en.wikipedia.org/wiki/Toyota_Corolla_Cross"
+	startTime := time.Now()
+	startURL := "https://en.wikipedia.org/wiki/Cat"
+	endURL := "https://en.wikipedia.org/wiki/Medan"
 
-    // Panggil fungsi SolveWikiRace untuk menyelesaikan permainan Wiki Race
-    links, err := SolveWikiRace(startURL, targetURL)
-    if err != nil {
-        log.Fatal(err)
-    }
+	shortestPath := findShortestPath(startURL, endURL)
+	if shortestPath == nil {
+		log.Fatal("No path found")
+	}
 
-    // Tampilkan hasil
-    fmt.Println("Links needed to go from", startURL, "to", targetURL+":")
-    for _, link := range links {
-        fmt.Println(link)
-    }
-}
-
-// SolveWikiRace mencari jalur terpendek dari startURL ke targetURL menggunakan BFS
-func SolveWikiRace(startURL, targetURL string) ([]string, error) {
-    visited := make(map[string]bool)
-    queue := [][]string{{startURL}}
-
-    for len(queue) > 0 {
-        // Ambil rute yang akan dievaluasi selanjutnya
-        path := queue[0]
-        queue = queue[1:]
-
-        // Ambil URL terakhir dari rute
-        currentURL := path[len(path)-1]
-
-        // Jika kita sudah mencapai target, kembalikan jalur
-        if currentURL == targetURL {
-            return path, nil
-        }
-
-        // Jika URL sudah dikunjungi, lanjutkan ke rute berikutnya
-        if visited[currentURL] {
-            continue
-        }
-
-        // Ambil semua tautan pada halaman saat ini
-        links, err := getLinks(currentURL)
-        if err != nil {
-            return nil, err
-        }
-
-        // Tambahkan tautan baru ke antrian untuk evaluasi berikutnya
-        for _, link := range links {
-            newPath := append([]string(nil), path...)
-			fmt.Println(link)
-            newPath = append(newPath, link)
-            queue = append(queue, newPath)
-        }
-
-        // Tandai halaman saat ini sebagai sudah dikunjungi
-        visited[currentURL] = true
-    }
-
-    // Jika tidak ada jalur yang ditemukan
-    return nil, fmt.Errorf("no path found from %s to %s", startURL, targetURL)
-}
-
-// getLinks mengambil semua tautan dari halaman web yang diberikan
-func getLinks(url string) ([]string, error) {
-    var links []string
-
-    // Lakukan HTTP GET request untuk halaman web
-    resp, err := http.Get(url)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    // Gunakan goquery untuk mengurai HTML
-    doc, err := goquery.NewDocumentFromReader(resp.Body)
-    if err != nil {
-        return nil, err
-    }
-
-    // Temukan semua tautan pada halaman
-    doc.Find("a").Each(func(i int, s *goquery.Selection) {
-        // Ambil nilai atribut "href" dari tautan
-        link, exists := s.Attr("href")
-        if exists {
-            // Filter tautan internal Wikipedia yang valid
-            if strings.HasPrefix(link, "/wiki/") {
-                // Hapus hash dari URL (tautan dalam halaman yang sama)
-                link = strings.Split(link, "#")[0]
-
-                // Hapus tautan ke file (misalnya gambar)
-                if !strings.Contains(link, ":") {
-                    links = append(links, "https://en.wikipedia.org"+link)
-                }
-            }
-        }
-    })
-
-    return links, nil
+	fmt.Println("Shortest path:")
+	for _, link := range shortestPath {
+		fmt.Println(link.URL)
+	}
+	endTime := time.Now()
+	elapsed := endTime.Sub(startTime)
+	fmt.Println("Execution time:", elapsed)
 }
