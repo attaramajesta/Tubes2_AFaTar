@@ -37,9 +37,12 @@ const Race = () => {
     }
 
     const fetchPath = async () => {
+
         try {
             const algorithm = algoSwitch ? "ids" : "bfs";
-            const response = await fetch(`http://localhost:8080/${algorithm}?start=${encodeURIComponent(startInput)}&target=${encodeURIComponent(destInput)}`);
+            const startInputFormatted = startInput.replace(/\s/g, "_");
+            const destInputFormatted = destInput.replace(/\s/g, "_");
+            const response = await fetch(`http://localhost:8080/${algorithm}?start=${encodeURIComponent(startInputFormatted)}&target=${encodeURIComponent(destInputFormatted)}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -53,10 +56,10 @@ const Race = () => {
     return(
         <div id="race" className="race-page">
             <div className='title'>
-            <h2>Find the shortest path from</h2>
+                <h2>Find the shortest path from</h2>
             </div>
             <div className='input-box'>
-                <input type="text" id="startInput" placeholder="Superman" value={startInput} onChange={handleInputAwal}></input>
+                <input type="text" id="startInput" placeholder="Superman" value={startInput} onChange={handleInputAwal}/>
                 <div className="suggestion">
                     {suggestionAwal.map((suggestion, index) => (
                         <p key={index} onClick={() => {setStartInput(suggestion); setSuggestionsAwal([]);}}>{suggestion}</p>
@@ -64,7 +67,7 @@ const Race = () => {
                 </div>
             </div>
             <div className='input-box'>
-                <input type="text" id="destInput" placeholder="Marine" value={destInput} onChange={handleInputAkhir}></input>
+                <input type="text" id="destInput" placeholder="Marine" value={destInput} onChange={handleInputAkhir}/>
                 <div className="suggestion">
                     {suggestionAkhir.map((suggestion, index) => (
                         <p key={index} onClick={() => {setDestInput(suggestion); setSuggestionsAkhir([]);}}>{suggestion}</p>
@@ -72,15 +75,15 @@ const Race = () => {
                 </div>
             </div>
             <div className='switch-container'>
-            <span>BFS</span>
-            <label className="switch">
-                <input type="checkbox" id="algoSwitch" checked={algoSwitch} onChange={e => setAlgoSwitch(e.target.checked)}></input>
-                <span className="slider round"></span>
-            </label>
-            <span>IDS</span>
+                <span>BFS</span>
+                <label className="switch">
+                    <input type="checkbox" id="algoSwitch" checked={algoSwitch} onChange={e => setAlgoSwitch(e.target.checked)}></input>
+                    <span className="slider round"></span>
+                </label>
+                <span>IDS</span>
             </div>
             <div className='submit-container'>
-            <button onClick={fetchPath}>RACE!</button>
+                <button onClick={fetchPath}>RACE!</button>
             </div>
       </div>
     );

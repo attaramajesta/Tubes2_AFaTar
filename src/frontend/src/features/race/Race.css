@@ -1,14 +1,15 @@
 .race-page {
     font-family: Arial, sans-serif;
     background-color: #91befa;
-    margin: 1;
-    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column; 
     justify-content: center; 
     align-items: center; 
-    height: 600px;
+    height: 100vh;
     width: 100%;
+    padding-left: 5%;
+    padding-right: 5%;
 }
 
 .race-page h2 {
@@ -18,17 +19,17 @@
 .input-box {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    margin-bottom: 2%;
     height: 40px;
-    width: 100%;
+    width: 50%;
 }
 
 .input-box input {
-    margin-bottom: 20px;
+    min-height: 40px;
+    width: 100%;
     border-radius: 60px;
+    font-size: 18px;
     text-align: center; 
-    position: relative;
     z-index: 1;
 }
 
@@ -37,14 +38,19 @@
     flex-direction: column;
     background: white;
     position: relative;
-    z-index: 2;
+    z-index: 10;
+    width: 100%;
+    border-radius: 0 0 10px 10px;
 }
 
 .input-box p {
-    margin: 0;
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
+    height: 30px;
+    text-align: center;
     cursor: pointer;
+}
+
+.input-box p:hover {
+    background-color: #f1f1f1;
 }
 
 .race-page button {

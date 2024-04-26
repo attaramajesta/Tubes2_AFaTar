@@ -1,10 +1,12 @@
 .about-us {
-    margin-top: 48px;
-    height: 80vh;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     padding: 6%;
 }
 
 .racer-container {
+    margin-top: 10%;
     display: flex;
     justify-content: center;
     color: black;

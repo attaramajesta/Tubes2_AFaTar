@@ -1,9 +1,8 @@
-package main
+package ids
 
 import (
     "fmt"
     "github.com/gocolly/colly"
-    "github.com/rs/cors"
     "strings"
 	"time"
     "sync"
@@ -24,7 +23,8 @@ type Request struct {
 var linkCache = &sync.Map{}
 
 // fungsi getLinks yang pake go-colly
-func getLinks(pageURL string) []Link {
+func getLinks(pageTitle string) []Link {
+    pageURL := "https://en.wikipedia.org/wiki/" + pageTitle
 
     if links, ok := linkCache.Load(pageURL); ok {
         return links.([]Link)
@@ -44,7 +44,9 @@ func getLinks(pageURL string) []Link {
                 }
             }
             if isArticleLink && !strings.Contains(link, ":") {
-                links = append(links, Link{URL: "https://en.wikipedia.org" + link})
+                // Extract the page title from the URL
+                pageTitle := strings.TrimPrefix(link, "/wiki/")
+                links = append(links, Link{URL: pageTitle})
             }
         }
     })
@@ -196,7 +198,7 @@ func DLS(path *[]string, visited *sync.Map, target string, depth int) ([]string,
     return *path, false
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func IDSHandler(w http.ResponseWriter, r *http.Request) {
     start := r.URL.Query().Get("start")
     target := r.URL.Query().Get("target")
 
@@ -219,7 +221,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func main() {
+// func main() {
     // start := "https://en.wikipedia.org/wiki/Joko_Widodo"
     // target := "https://en.wikipedia.org/wiki/Sukarno"
 
@@ -233,17 +235,17 @@ func main() {
     //     fmt.Println("No path found")
     // }
 
-    mux := http.NewServeMux()
-    mux.HandleFunc("/ids", handler)
+    // mux := http.NewServeMux()
+    // mux.HandleFunc("/ids", handler)
 
-    // Setup CORS
-    c := cors.New(cors.Options{
-        AllowedOrigins: []string{"*"},
-        AllowCredentials: true,
-        AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-    })
+    // // Setup CORS
+    // c := cors.New(cors.Options{
+    //     AllowedOrigins: []string{"*"},
+    //     AllowCredentials: true,
+    //     AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+    // })
 
-    handler := c.Handler(mux)
+    // handler := c.Handler(mux)
 
-    http.ListenAndServe(":8080", handler)
-}
+    // http.ListenAndServe(":8080", handler)
+// }
