@@ -56,7 +56,7 @@ const About = () => {
                     </div>
 
                     <div className="ag-courses-item_desc-box">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed tristique, odio id venenatis lobortis, metus risus maximus ipsum, at blandit lacus nisl eget diam.
+                    It's always "kenapa Bandung?" but it's never "bagaimana Bandung?"
                     </div>
                     <span className="ag-courses-item_nim">
                         13522155
