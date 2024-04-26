@@ -3,9 +3,10 @@ package main
 import (
     "container/list"
     "fmt"
-    "log"
     "net/http"
     "golang.org/x/net/html"
+	"encoding/json"
+	"github.com/rs/cors"
     "strings"
 	"time"
 )
@@ -64,7 +65,8 @@ func getLinks(pageURL string) []Link {
 }
 
 // Algoritma BFS untuk menemukan jalur terpendek antara dua halaman Wikipedia
-func findShortestPath(startURL, endURL string) []Link {
+func findShortestPath(startURL, endURL string) ([]Link, time.Duration) {
+	startTime := time.Now()
 	// Queue untuk BFS
 	queue := list.New()
 
@@ -85,7 +87,7 @@ func findShortestPath(startURL, endURL string) []Link {
 
 		// Jika sudah mencapai halaman akhir
 		if currentLink.URL == endURL {
-			return currentPath
+			return currentPath, time.Since(startTime)
 		}
 
 		// Periksa halaman yang terhubung dengan halaman saat ini
@@ -108,31 +110,68 @@ func findShortestPath(startURL, endURL string) []Link {
 
 				// Jika link adalah endURL, langsung kembalikan jalur yang ditemukan
 				if link.URL == endURL {
-					return newPath
+					return newPath, time.Since(startTime)
 				}
 			}
 		}
 	}
 
 	// Jika tidak ada jalur yang ditemukan
-	return nil
+	return nil, time.Since(startTime)
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    start := r.URL.Query().Get("start")
+    target := r.URL.Query().Get("target")
+
+    if start == "" || target == "" {
+        http.Error(w, "Missing start or target parameter", http.StatusBadRequest)
+        return
+    }
+
+    shortestPath, duration := findShortestPath(start, target)
+
+    if shortestPath != nil {
+        json.NewEncoder(w).Encode(map[string]interface{}{
+            "path": shortestPath,
+            "duration": duration,
+        })
+    } else {
+        json.NewEncoder(w).Encode(map[string]interface{}{
+            "error": "No path found",
+        })
+    }
 }
 
 func main() {
-	startTime := time.Now()
-	startURL := "https://en.wikipedia.org/wiki/Joko_Widodo"
-	endURL := "https://en.wikipedia.org/wiki/Koi"
+	// startTime := time.Now()
+	// startURL := "https://en.wikipedia.org/wiki/Joko_Widodo"
+	// endURL := "https://en.wikipedia.org/wiki/Koi"
 
-	shortestPath := findShortestPath(startURL, endURL)
-	if shortestPath == nil {
-		log.Fatal("No path found")
-	}
+	// shortestPath := findShortestPath(startURL, endURL)
+	// if shortestPath == nil {
+	// 	log.Fatal("No path found")
+	// }
 
-	fmt.Println("Shortest path:")
-	for _, link := range shortestPath {
-		fmt.Println(link.URL)
-	}
-	endTime := time.Now()
-	elapsed := endTime.Sub(startTime)
-	fmt.Println("Execution time:", elapsed)
+	// fmt.Println("Shortest path:")
+	// for _, link := range shortestPath {
+	// 	fmt.Println(link.URL)
+	// }
+	// endTime := time.Now()
+	// elapsed := endTime.Sub(startTime)
+	// fmt.Println("Execution time:", elapsed)
+
+	mux := http.NewServeMux()
+    mux.HandleFunc("/bfs", handler)
+
+    // Setup CORS
+    c := cors.New(cors.Options{
+        AllowedOrigins: []string{"*"},
+        AllowCredentials: true,
+        AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+    })
+
+    handler := c.Handler(mux)
+
+    http.ListenAndServe(":8080", handler)
 }
