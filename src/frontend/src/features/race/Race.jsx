@@ -76,6 +76,8 @@ const Race = () => {
                         <li key={index}><a href={`https://en.wikipedia.org/wiki/${step}`}>{step}</a></li>
                     ))}
                 </ul>
+                <p>Path Depth: {resultData.depth} </p>
+                <p>Total Visited Pages: {resultData.totalVisited} </p>
             </div>
         );
     }
