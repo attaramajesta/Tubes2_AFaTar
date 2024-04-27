@@ -80,38 +80,41 @@ func getLinks(pageTitle string) []Link {
     return links
 }
 
-func findShortestPath(startPage, endPage string) ([]string, float64) {
+func findShortestPath(startPage, endPage string) ([]string, float64, int, int) {
     startTime := time.Now()
     queue := list.New()
     visited := make(map[string]bool)
     path := make(map[string][]string)
     queue.PushBack([]string{startPage})
 
+    totalVisited := 0
+
     for queue.Len() > 0 {
         currentPath := queue.Remove(queue.Front()).([]string)
         currentLink := currentPath[len(currentPath)-1]
 
         if currentLink == endPage {
-            return currentPath, time.Since(startTime).Seconds()
+            return currentPath, time.Since(startTime).Seconds(), totalVisited, len(currentPath)
         }
 
         links := getLinks(currentLink)
         for _, link := range links {
             if !visited[link.URL] {
                 visited[link.URL] = true
+                totalVisited++
                 newPath := append(currentPath, link.URL)
                 queue.PushBack(newPath)
                 path[link.URL] = newPath
                 fmt.Print(newPath, "\n")
 
                 if link.URL == endPage {
-                    return newPath, time.Since(startTime).Seconds()
+                    return newPath, time.Since(startTime).Seconds(), totalVisited, len(newPath)
                 }
             }
         }
     }
 
-    return nil, time.Since(startTime).Seconds()
+    return nil, time.Since(startTime).Seconds(), totalVisited, 0
 }
 
 func BFSHandler(w http.ResponseWriter, r *http.Request) {
@@ -123,12 +126,14 @@ func BFSHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortestPath, duration := findShortestPath(start, target)
+	shortestPath, duration, totalVisited, depth := findShortestPath(start, target)
 
 	if shortestPath != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"path": shortestPath,
 			"duration": duration,
+            "totalVisited": totalVisited,
+            "depth": depth,
 		})
 	} else {
 		json.NewEncoder(w).Encode(map[string]interface{}{

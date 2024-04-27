@@ -109,17 +109,19 @@ func getLinks(pageTitle string) []Link {
 // }
 
 // // sync map
-func IDS(start, target string) ([]string, float64) {
+func IDS(start, target string) ([]string, float64, int, int) {
     startTime := time.Now()
 
     depth := 0
+    totalVisited := 0
     for {
         visited := &sync.Map{}
         path := make([]string, 0)
         path = append(path, start)
-        path, found := DLS(&path, visited, target, depth)
+        path, found, visitedCount := DLS(&path, visited, target, depth)
+        totalVisited += visitedCount
         if found {
-            return path, time.Since(startTime).Seconds()
+            return path, time.Since(startTime).Seconds(), totalVisited, depth
         }
         depth++
     }
@@ -187,27 +189,30 @@ func IDS(start, target string) ([]string, float64) {
 // }
 
 // sync map
-func DLS(path *[]string, visited *sync.Map, target string, depth int) ([]string, bool) {
+func DLS(path *[]string, visited *sync.Map, target string, depth int) ([]string, bool, int) {
     node := (*path)[len(*path)-1]
+    visitedCount := 0
 
     fmt.Println(*path)
 
     if node == target {
-        return *path, true
+        return *path, true, visitedCount
     }
 
     if depth <= 0 {
-        return *path, false
+        return *path, false, visitedCount
     }
 
     visited.Store(node, true)
 
     for _, link := range getLinks(node) {
         if _, ok := visited.Load(link.URL); !ok {
+            visitedCount++
             *path = append(*path, link.URL)
-            newPath, found := DLS(path, visited, target, depth-1)
+            newPath, found, newVisitedCount := DLS(path, visited, target, depth-1)
+            visitedCount += newVisitedCount
             if found {
-                return newPath, true
+                return newPath, true, visitedCount
             }
             // Undo the changes to the path and visited map after the recursive call
             *path = (*path)[:len(*path)-1]
@@ -215,7 +220,7 @@ func DLS(path *[]string, visited *sync.Map, target string, depth int) ([]string,
         }
     }
 
-    return *path, false
+    return *path, false, visitedCount
 }
 
 func IDSHandler(w http.ResponseWriter, r *http.Request) {
@@ -227,12 +232,14 @@ func IDSHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    path, duration := IDS(start, target)
+    path, duration, totalVisited, depth := IDS(start, target)
 
     if path != nil {
         json.NewEncoder(w).Encode(map[string]interface{}{
             "path": path,
             "duration": duration,
+            "totalVisited": totalVisited,
+            "depth": depth,
         })
     } else {
         json.NewEncoder(w).Encode(map[string]interface{}{
