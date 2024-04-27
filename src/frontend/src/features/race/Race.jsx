@@ -55,9 +55,10 @@ const Race = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            console.log(data);
+            console.log(data.path);
             setResultData(data);
             setLoading(false);
+            setShowResultPage(true);
         } catch (error) {
             setLoading(false);
             console.error('Fetch error:', error);
@@ -68,11 +69,11 @@ const Race = () => {
         return (
             <div className="result-box">
                 <h2 className="title">Result</h2>
-                <p>Duration: {resultData.duration / 1000} s </p>
+                <p>Duration: {resultData.duration} s </p>
                 <p>Path:</p>
                 <ul>
                     {resultData.path.map((step, index) => (
-                        <li key={index}><a href={`https://en.wikipedia.org/wiki/${step.URL}`}>{step.URL}</a></li>
+                        <li key={index}><a href={`https://en.wikipedia.org/wiki/${step}`}>{step}</a></li>
                     ))}
                 </ul>
             </div>
