@@ -31,14 +31,21 @@ func getLinks(pageTitle string) []Link {
         return links.([]Link)
     }
 
-    c := colly.NewCollector()
+    c := colly.NewCollector(
+        // Limit the number of concurrent connections to the same domain
+        colly.Async(true),
+    )
+    c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 2})
+
     var links []Link
 
     c.OnHTML("a[href]", func(e *colly.HTMLElement) {
         link := e.Attr("href")
-        if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, ":") && !strings.Contains(link, "category") && !strings.Contains(link, "Main_Page") && link != "/wiki/Wikipedia:About" && link != "/wiki/Wikipedia:General_disclaimer" && link != "/wiki/Wikipedia:Contact_us" && link != "/wiki/Special:SpecialPages" {
+        if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "#") && !strings.Contains(link, ":") && !strings.Contains(link, "category") && !strings.Contains(link, "Main_Page") && link != "/wiki/Wikipedia:About" && link != "/wiki/Wikipedia:General_disclaimer" && link != "/wiki/Wikipedia:Contact_us" && link != "/wiki/Special:SpecialPages" {
             isArticleLink := true
             for _, class := range strings.Fields(e.Attr("class")) {
+                // fmt.Print(link);
+                // fmt.Println(class);
                 if class == "new" || strings.Contains(strings.ToLower(class), "portal") {
                     isArticleLink = false
                     break
@@ -52,14 +59,28 @@ func getLinks(pageTitle string) []Link {
         }
     })
 
+    c.OnHTML("a.new[href]", func(e *colly.HTMLElement) {
+        link := e.Attr("href")
+        if strings.HasPrefix(link, "/wiki/") {
+            for i, l := range links {
+                if l.URL == strings.TrimPrefix(link, "/wiki/") {
+                    // Remove the link from the links slice
+                    links = append(links[:i], links[i+1:]...)
+                    break
+                }
+            }
+        }
+    })
+
     c.Visit(pageURL)
+    c.Wait() // Wait for all requests to finish
 
     linkCache.Store(pageURL, links)
 
     return links
 }
 
-func findShortestPath(startPage, endPage string) ([]Link, time.Duration) {
+func findShortestPath(startPage, endPage string) ([]Link, float64) {
     startTime := time.Now()
     queue := list.New()
     visited := make(map[string]bool)
@@ -71,7 +92,7 @@ func findShortestPath(startPage, endPage string) ([]Link, time.Duration) {
         currentLink := currentPath[len(currentPath)-1]
 
         if currentLink.URL == endPage {
-            return currentPath, time.Since(startTime)
+            return currentPath, time.Since(startTime).Seconds()
         }
 
         links := getLinks(currentLink.URL)
@@ -84,13 +105,13 @@ func findShortestPath(startPage, endPage string) ([]Link, time.Duration) {
                 fmt.Print(newPath, "\n")
 
                 if link.URL == endPage {
-                    return newPath, time.Since(startTime)
+                    return newPath, time.Since(startTime).Seconds()
                 }
             }
         }
     }
 
-    return nil, time.Since(startTime)
+    return nil, time.Since(startTime).Seconds()
 }
 
 func BFSHandler(w http.ResponseWriter, r *http.Request) {

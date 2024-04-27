@@ -22,7 +22,6 @@ type Request struct {
 
 var linkCache = &sync.Map{}
 
-// fungsi getLinks yang pake go-colly
 func getLinks(pageTitle string) []Link {
     pageURL := "https://en.wikipedia.org/wiki/" + pageTitle
 
@@ -30,14 +29,21 @@ func getLinks(pageTitle string) []Link {
         return links.([]Link)
     }
 
-    c := colly.NewCollector()
+    c := colly.NewCollector(
+        // Limit the number of concurrent connections to the same domain
+        colly.Async(true),
+    )
+    c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 2})
+
     var links []Link
 
     c.OnHTML("a[href]", func(e *colly.HTMLElement) {
         link := e.Attr("href")
-        if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, ":") && !strings.Contains(link, "category") && !strings.Contains(link, "Main_Page") && link != "/wiki/Wikipedia:About" && link != "/wiki/Wikipedia:General_disclaimer" && link != "/wiki/Wikipedia:Contact_us" && link != "/wiki/Special:SpecialPages" {
+        if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "#") && !strings.Contains(link, ":") && !strings.Contains(link, "category") && !strings.Contains(link, "Main_Page") && link != "/wiki/Wikipedia:About" && link != "/wiki/Wikipedia:General_disclaimer" && link != "/wiki/Wikipedia:Contact_us" && link != "/wiki/Special:SpecialPages" {
             isArticleLink := true
             for _, class := range strings.Fields(e.Attr("class")) {
+                // fmt.Print(link);
+                // fmt.Println(class);
                 if class == "new" || strings.Contains(strings.ToLower(class), "portal") {
                     isArticleLink = false
                     break
@@ -51,7 +57,21 @@ func getLinks(pageTitle string) []Link {
         }
     })
 
+    c.OnHTML("a.new[href]", func(e *colly.HTMLElement) {
+        link := e.Attr("href")
+        if strings.HasPrefix(link, "/wiki/") {
+            for i, l := range links {
+                if l.URL == strings.TrimPrefix(link, "/wiki/") {
+                    // Remove the link from the links slice
+                    links = append(links[:i], links[i+1:]...)
+                    break
+                }
+            }
+        }
+    })
+
     c.Visit(pageURL)
+    c.Wait() // Wait for all requests to finish
 
     linkCache.Store(pageURL, links)
 
@@ -89,7 +109,7 @@ func getLinks(pageTitle string) []Link {
 // }
 
 // // sync map
-func IDS(start, target string) ([]string, time.Duration) {
+func IDS(start, target string) ([]string, float64) {
     startTime := time.Now()
 
     depth := 0
@@ -99,7 +119,7 @@ func IDS(start, target string) ([]string, time.Duration) {
         path = append(path, start)
         path, found := DLS(&path, visited, target, depth)
         if found {
-            return path, time.Since(startTime)
+            return path, time.Since(startTime).Seconds()
         }
         depth++
     }
@@ -222,18 +242,10 @@ func IDSHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // func main() {
-    // start := "https://en.wikipedia.org/wiki/Joko_Widodo"
-    // target := "https://en.wikipedia.org/wiki/Sukarno"
+//     start := "Joko_Widodo"
 
-    // path, duration := IDS(start, target)
-    // fmt.Println("Execution time:", duration)
-
-
-    // if path != nil {
-    //     fmt.Println("Path: ", path)
-    // } else {
-    //     fmt.Println("No path found")
-    // }
+//     getLinks(start)
+    // fmt.Println(links)
 
     // mux := http.NewServeMux()
     // mux.HandleFunc("/ids", handler)
