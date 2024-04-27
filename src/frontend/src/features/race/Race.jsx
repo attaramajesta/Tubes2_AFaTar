@@ -91,6 +91,7 @@ const Race = () => {
     }
 
     return (
+        <>
         <div id="race" className="race-page">
             <div className="race-container">
                 <img src={Heart} className="stat" alt="heart rate"/>
@@ -133,6 +134,10 @@ const Race = () => {
             <div className="highlight"></div>
             {showResultPage && <ResultPage />}
         </div>
+        <div className="footer">
+            <p>© 2024 Tugas Besar IF2211 Strategi Algoritma</p>
+        </div>
+        </>
     );
 }
 export default Race;
