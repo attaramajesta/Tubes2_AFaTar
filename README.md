@@ -13,7 +13,7 @@ iv. Author (identitas pembuat)
 
 WikiRace is a competitive online game where players navigate through Wikipedia by clicking hyperlinks to reach a specific target page from a given starting page in the shortest number of clicks possible. For more information:
 
-- [Project Specification](link not provided yet)
+- [Project Specification](https://docs.google.com/document/d/1h6WY_NxfCBPrKkS84Crm2qAhrRA8DatL/edit)
 
 ## IDS and BFS Algorithm
 ### BFS
