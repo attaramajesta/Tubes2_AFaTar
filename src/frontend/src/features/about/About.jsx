@@ -3,14 +3,7 @@ import './About.css';
 const About = () => {
     return (
         <div className='about-us'>
-            <div className="racer-container">
-                <p>Hello 👋 I'm</p>
-                <section className="animation">
-                <div className="first" ><div>Front-End Developer</div></div>
-                <div className="second"><div>Back-End Web Developer</div></div>
-                <div className="third"><div>Algorithm Developer</div></div>
-                </section>
-            </div>
+            <h2 className="ag-title">About Us</h2>
             <div className="ag-format-container">
                 <div className="ag-courses_box">
                 <div className="ag-courses_item">
