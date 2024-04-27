@@ -80,26 +80,26 @@ func getLinks(pageTitle string) []Link {
     return links
 }
 
-func findShortestPath(startPage, endPage string) ([]Link, float64) {
+func findShortestPath(startPage, endPage string) ([]string, float64) {
     startTime := time.Now()
     queue := list.New()
     visited := make(map[string]bool)
-    path := make(map[string][]Link)
-    queue.PushBack([]Link{{URL: startPage}})
+    path := make(map[string][]string)
+    queue.PushBack([]string{startPage})
 
     for queue.Len() > 0 {
-        currentPath := queue.Remove(queue.Front()).([]Link)
+        currentPath := queue.Remove(queue.Front()).([]string)
         currentLink := currentPath[len(currentPath)-1]
 
-        if currentLink.URL == endPage {
+        if currentLink == endPage {
             return currentPath, time.Since(startTime).Seconds()
         }
 
-        links := getLinks(currentLink.URL)
+        links := getLinks(currentLink)
         for _, link := range links {
             if !visited[link.URL] {
                 visited[link.URL] = true
-                newPath := append(currentPath, link)
+                newPath := append(currentPath, link.URL)
                 queue.PushBack(newPath)
                 path[link.URL] = newPath
                 fmt.Print(newPath, "\n")
